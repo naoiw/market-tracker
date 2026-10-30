@@ -17,14 +17,16 @@ export const assets: Asset[] = [
   },
   {
     id: 'BTCJPY', name: 'Bitcoin', ticker: 'BTC / JPY',
-    category: 'crypto', currency: 'JPY', source: '要設定',
-    detail: '公開利用を許諾された価格APIを接続すると1時間足で記録します。',
+    category: 'crypto', currency: 'JPY', source: 'bitbank',
+    sourceUrl: 'https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api_JP.md',
+    detail: 'bitbankの直近約定価格を毎時取得。USDはECBのUSD/JPY日次参考値から概算した換算額です。',
     color: '#efb85c'
   },
   {
     id: 'ETHJPY', name: 'Ethereum', ticker: 'ETH / JPY',
-    category: 'crypto', currency: 'JPY', source: '要設定',
-    detail: '公開利用を許諾された価格APIを接続すると1時間足で記録します。',
+    category: 'crypto', currency: 'JPY', source: 'bitbank',
+    sourceUrl: 'https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api_JP.md',
+    detail: 'bitbankの直近約定価格を毎時取得。USDはECBのUSD/JPY日次参考値から概算した換算額です。',
     color: '#b8a0ff'
   },
   {

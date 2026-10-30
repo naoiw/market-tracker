@@ -43,19 +43,38 @@ function getChange(points: PricePoint[]) {
   return ((points[points.length - 1].value / points[0].value) - 1) * 100;
 }
 
+function approximateUsd(point: PricePoint | undefined, fxPoints: PricePoint[]) {
+  if (!point) return null;
+  const priceTime = Date.parse(point.at);
+  // ECB is a daily reference rate; never use a future or excessively old FX rate.
+  const fx = [...fxPoints].reverse().find((rate) => {
+    const lag = priceTime - Date.parse(rate.at);
+    return lag >= 0 && lag <= 5 * 86400_000 && Number.isFinite(rate.value) && rate.value > 0;
+  });
+  return fx ? { value: point.value / fx.value, fxDate: fx.at } : null;
+}
+
+function formatUsd(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD', maximumFractionDigits: 0
+  }).format(value);
+}
+
 function PriceCard({
-  asset, points, selected, onSelect
-}: { asset: Asset; points: PricePoint[]; selected: boolean; onSelect: () => void }) {
+  asset, points, fxPoints, selected, onSelect
+}: { asset: Asset; points: PricePoint[]; fxPoints: PricePoint[]; selected: boolean; onSelect: () => void }) {
   const latest = points.at(-1);
+  const usd = asset.category === 'crypto' ? approximateUsd(latest, fxPoints) : null;
   const change = getChange(points.slice(-2));
   return (
     <button type="button" className={'asset-card ' + (selected ? 'selected' : '')} onClick={onSelect}>
       <span className="asset-top"><span className="ticker">{asset.ticker}</span><span className={'status-dot ' + (latest ? 'available' : '')}/></span>
       <span className="asset-name">{asset.name}</span>
       <span className="asset-price">{latest ? formatValue(latest.value, asset) : '—'} <small>{latest ? asset.currency : ''}</small></span>
+      {usd && <span className="usd-estimate">≈ {formatUsd(usd.value)} <span>参考換算</span></span>}
       <span className="asset-bottom">
         <span className={change === null ? 'muted' : change >= 0 ? 'positive' : 'negative'}>
-          {change === null ? (latest ? '比較データなし' : 'データ未接続') : (change >= 0 ? '+' : '') + change.toFixed(2) + '%'}
+          {change === null ? (latest ? '比較データなし' : (asset.category === 'crypto' ? '価格未取得' : 'データ未接続')) : (change >= 0 ? '+' : '') + change.toFixed(2) + '%'}
         </span>
         <span className="muted">{latest ? formatDate(latest.at, true) : '—'}</span>
       </span>
@@ -98,6 +117,7 @@ export default function App() {
   const allPoints = book.series[selected.id] ?? [];
   const points = inRange(allPoints, period);
   const latest = allPoints.at(-1);
+  const usdEstimate = selected.category === 'crypto' ? approximateUsd(latest, book.series.USDJPY ?? []) : null;
   const change = getChange(points);
   const loadedCount = assets.filter((asset) => book.series[asset.id]?.length).length;
   const chartData = points.map((point) => ({ ...point, label: formatDate(point.at, period === '24H' || period === '7D') }));
@@ -134,6 +154,7 @@ export default function App() {
           </div>
           <div className="asset-grid">{filteredAssets.map((asset) => <PriceCard
             key={asset.id} asset={asset} points={book.series[asset.id] ?? []}
+            fxPoints={book.series.USDJPY ?? []}
             selected={selectedId === asset.id}
             onSelect={() => setSelectedId(asset.id)}
           />)}</div>
@@ -144,6 +165,9 @@ export default function App() {
             <div><span className="field-label">{selected.ticker} / PRICE HISTORY</span>
               <h2>{selected.name}</h2>
               <div className="large-price">{latest ? formatValue(latest.value, selected) : '—'} <small>{latest ? selected.currency : ''}</small></div>
+              {usdEstimate && <div className="usd-estimate usd-estimate-detail">
+                ≈ {formatUsd(usdEstimate.value)} <span>参考換算（ECB USD/JPY：{formatDate(usdEstimate.fxDate)}）</span>
+              </div>}
               <div className={'change-text ' + (change === null ? 'muted' : change >= 0 ? 'positive' : 'negative')}>
                 {change === null ? '選択期間の比較データはありません' : (change >= 0 ? '▲ +' : '▼ ') + change.toFixed(2) + '%（選択期間）'}
               </div>
@@ -193,11 +217,11 @@ export default function App() {
         <section className="info-grid">
           <article className="info-panel"><span className="field-label">AUTOMATION</span>
             <h3>GitHub Actions で収集</h3>
-            <p>毎時17分（日本時間）に定期実行。日次参考レートはデータ提供元の更新日ごとに保存し、同じ日時の重複を防ぎます。</p>
+            <p>毎時17分（日本時間）に取得を試みます。BTC・ETHは毎時の観測値、為替はECBの日次参考値を保存します。</p>
           </article>
           <article className="info-panel"><span className="field-label">DATA SOURCES</span>
             <h3>価格と取得頻度について</h3>
-            <p>為替は日次の参考値です。暗号資産と株価指数は適切な公開利用権のあるデータ提供元が接続されるまで未表示です。</p>
+            <p>為替はECBの日次参考値、BTC・ETHはbitbankの毎時スナップショットです。株価指数はデータソース未接続です。</p>
           </article>
         </section>
         <p className="disclaimer">※ 本サイトは情報提供を目的とした試作ツールです。実際の約定価格ではなく、投資判断への利用を保証しません。価格取得には遅延・欠損が生じる場合があります。</p>

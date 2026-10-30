@@ -1,50 +1,67 @@
-# Architecture
+# システム設計
 
-## Data flow
+## 全体構成
 
 ```text
-Frankfurter (official daily FX references)       Licensed external feed (optional)
-                   |                                         |
-                   +------------------+----------------------+
-                                      |
-                         scripts/collect.mjs (Node 22)
-                                      |
-                     scripts/price-utils.mjs (validation)
-                                      |
-                       public/data/prices.json
-                                      |
-                         Vite build -> GitHub Pages
-                                      |
-                       React UI / Recharts (read only)
+ECB（日次参考レート）           利用許諾済みの外部データAPI（任意）
+       |                                    |
+   Frankfurter                              |
+       +-----------------+------------------+
+                         |
+              scripts/collect.mjs
+                         |
+              scripts/price-utils.mjs
+                （正規化・検証）
+                         |
+         main: public/data/prices.json
+                         |
+        +----------------+-----------------+
+        |                                  |
+   main のビルド                    develop のビルド
+        |                      （mainのJSONをプレビューへコピー）
+        +----------------+-----------------+
+                         |
+                GitHub Pages
+          /market-tracker/  /develop/
 ```
 
-- `publish.yml`: `main` push, manual run, or JST hourly cron.
-- Scheduled/manual jobs fetch prices and commit only when the series changes. This workflow also builds and deploys the dashboard, since bot-initiated commits do not trigger the normal `push` workflow.
-- `ci.yml`: run node tests and TS/Vite build on `develop` pushes and pull requests.
-- The browser never receives tokens; optional bearer credentials only exist in Actions Secrets.
-- Public data is not sourced from Yahoo, unofficial scrapers, or APIs lacking clear republication rights.
+- UIはReact + TypeScript + Rechartsを使う読み取り専用Viteアプリです。
+- ブラウザはビルド済み静的JSONのみ読み込みます。任意の認証トークンはActions Secretsからサーバー側の取得処理に渡します。
+- 自動取得する価格JSONの正本は`main`にのみ保存します。プレビューは公開直前に`main`の価格データを使用します。
+- CIは`validate-develop.yml`、価格取得と本番・プレビューの公開は`deploy-pages.yml`を使用します。
 
-## File contract
+## データの保存形式
+
+`public/data/prices.json`の構造例：
 
 ```json
 {
   "version": 1,
   "updatedAt": "2026-10-30T01:17:00.000Z",
   "series": {
-    "USDJPY": [{ "at": "2026-10-29T00:00:00.000Z", "value": 153.25 }]
+    "USDJPY": [
+      {"at": "2026-10-29T00:00:00.000Z", "value": 153.25}
+    ]
   }
 }
 ```
 
-`updatedAt = null` and an empty `series` are valid before the first collection. Data points represent observations at their marked time; for reference rates the UTC midnight key means **provider reporting date**, not an intraday tick.
+`updatedAt`は公開JSONを最後に更新した時刻です。各観測値の`at`とは異なります。初回収集前は`updatedAt: null`と空の`series`を許容します。
 
-- At most one value per timestamp, latest write replaces a duplicate.
-- Series sorted by UTC timestamp ascending.
-- Nonpositive, NaN, infinite and unknown prices rejected.
-- Retains the latest 180 days; older data is intentionally not kept.
-- If a feed fails, successful other feeds can still update. If all fail, collection fails without altering the JSON.
-- Workflows may run late or be skipped. Chart displays actual last observation rather than inventing a current price.
+- 日次参考レートでは`T00:00:00.000Z`が**発表元の対象日**を示し、取引時刻や約定時刻ではありません。
+- 同じ銘柄・同じ日時のデータは重複登録しません。タイムスタンプの昇順に保存します。
+- 許可された銘柄ID、正の有限数値、妥当なタイムスタンプのみ受け付けます。
+- 現在の履歴保持期間は180日です。
+- API取得エラーは再試行し、全ソースの失敗時にはJSONを書き換えません。
+- 定期収集と実際の市場データの更新間隔は独立しています。収集ワークフローが成功しても、前回と同じ価格であれば更新しません。
 
-## Development
+## ディレクトリ
 
-Implement changes on `develop`; open PRs targeting `main`. The hourly `schedule` trigger exists **only on the default branch**. Before merging a PR, run `npm test` and `npm run build` locally or use CI.
+- `index.html` — Viteアプリのエントリポイント
+- `src/` — コンポーネント、グラフ、CSS
+- `scripts/` — API取得と時系列データ処理
+- `public/data/` — 公開用JSON
+- `tests/` — 価格正規化・履歴更新のテスト
+- `.github/workflows/` — CI・データ収集・Pages公開
+
+ブランチ運用は[DEVELOPMENT.md](DEVELOPMENT.md)、CIとPagesの詳細は[DEPLOYMENT.md](DEPLOYMENT.md)、データ使用許諾は[data-sources.md](data-sources.md)を参照してください。

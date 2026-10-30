@@ -1,73 +1,74 @@
-# market-tracker
+# Market Tracker
 
-GitHub Actions で価格を収集し、React + TypeScript で可視化する静的マーケットダッシュボード。
+GitHub Actions で価格データを定期取得し、React と TypeScript で可視化するマーケットダッシュボードです。
 
-- **Site (after Pages is enabled):** https://naoiw.github.io/market-tracker/
-- **Stack:** React / TypeScript / Vite / Recharts / Node.js / GitHub Actions
-- **Branch strategy:** `develop` で開発し、`main` へは PR でマージする
-- **Hosting:** GitHub Pages (Vercel-compatible relative URLs)
+## 主な機能
 
-## Quick start
+- 株価指数・為替・暗号資産の一覧と価格推移グラフ
+- 期間切替（24時間・7日・30日・90日・全期間）とカテゴリー別表示
+- USD/JPY・EUR/JPYの日次参考レートを自動取得（ECB / Frankfurter）
+- GitHub Actionsによる定期収集、価格履歴の重複排除・検証・保存
+- スマートフォン対応、最終更新日時・出典・未取得状態の表示
+- 利用許諾済みの市場データAPIを追加するための拡張口
 
-Node.js 22 以上が必要です。
+暗号資産と株価指数は、公開利用を許諾されたデータソースを接続するまでは価格を表示しません。為替は日次参考レートであり、1時間足の実勢相場ではありません。
+
+## 公開先
+
+| 環境 | ブランチ | URL |
+| --- | --- | --- |
+| 本番 | `main` | https://naoiw.github.io/market-tracker/ |
+| 開発プレビュー | `develop` | https://naoiw.github.io/market-tracker/develop/ |
+
+本番とプレビューは、1つのGitHub Pagesサイト（`github-pages`環境）内の別々のパスで公開します。プレビューも、公開済みの本番価格データを使います。
+
+## 技術スタック
+
+- **TypeScript / React 19 / Recharts** — UI・価格グラフ
+- **CSS / Vite** — スタイル・開発サーバー・ビルド
+- **Node.js 22 / pnpm 9** — 価格取得・開発・ビルド
+- **GitHub Actions / GitHub Pages** — テスト・定期取得・デプロイ
+
+## ローカル開発
 
 ```bash
-npm install
-npm run dev
-npm test
-npm run build
+corepack enable
+pnpm install --frozen-lockfile
+pnpm dev      # 開発サーバーを起動
+pnpm test     # 自動テスト
+pnpm build    # dist/ を生成
+pnpm collect  # 外部APIから価格を取得し、価格JSONを更新
 ```
 
-`npm run collect` はインターネットにアクセスして `public/data/prices.json` を更新します。
-価格未取得の状態ではダッシュボードに「データ未接続」と表示されます。架空の価格は使用しません。
+`pnpm dev`はViteの開発サーバーを起動します。`pnpm collect`はネットワークへアクセスして`public/data/prices.json`を書き換えます。生成物`dist/`はGit管理対象外です。
 
-## What works without any API keys
+## ブランチ運用
 
-- 為替：USD/JPY、EUR/JPY の**日次参考レート**（Frankfurter 経由、ECB 公表データ）。初回は過去約90日分を取得
-- 取得履歴の重複排除、日時順ソート、価格検証、180日より古い観測点の除外
-- スマホ対応のカード、期間切替グラフ、出典・更新日時・欠損状態の表示
-- 毎時17分（JST）に GitHub Actions が収集。データが変わった場合のみ保存・Pages 再デプロイ
-- 手動ワークフロー実行、PRでのビルド・テスト
+1. 通常の実装・修正は **`develop`** で行い、`main`は本番用として維持します。
+2. Pull Requestではテストとビルドを実行し、デプロイは行いません。
+3. `develop`へのpushが検証に成功すると、`main`上のワークフローから開発プレビューを更新します。
+4. 本番反映は **`develop` → `main`のPull Request** で行います。マージ後も`develop`は削除せず、`main`を同期して使い続けます。
 
-**出典：ECB statistics（Frankfurter 経由）。EUR/JPY と EUR/USD を基に USD/JPY をクロス計算しています。**
+価格履歴は定期実行で`main`へ保存するため、開発前には`main`の最新変更を取り込んでください。
 
-**注意：Frankfurter の参考為替レートは日次更新です。Actions を毎時実行してもレートが1時間ごとに変わるわけではありません。**
+## ディレクトリ構成
 
-## Additional assets: BTC/ETH, Nikkei, TOPIX, S&P 500, NASDAQ
+- `index.html` — 画面のエントリポイント
+- `src/` — Reactコンポーネント・画面状態・CSS
+- `scripts/` — API取得・データ検証・履歴の保存
+- `public/data/` — 公開する価格データ（JSON）
+- `tests/` — 自動テスト
+- `.github/workflows/` — 検証・価格収集・GitHub Pagesデプロイ
+- `docs/` — 仕様書・設計・開発手順・運用手順
 
-データソースは表示権・保存権・再配布権を確認してから有効にしてください。各社の無料 API を勝手に公開 JSON にコピーする実装はありません。
+## ドキュメント
 
-利用許諾済みデータを返す HTTPS endpoint を用意した場合、以下の Actions repository secrets を設定します。
+- [仕様書](docs/SPEC.md)
+- [開発手順](docs/DEVELOPMENT.md)
+- [デプロイ構成](docs/DEPLOYMENT.md)
+- [システム設計](docs/architecture.md)
+- [データソースと利用条件](docs/data-sources.md)
 
-- `AUTHORIZED_PRICE_FEED_URL`: JSON を返す HTTPS URL
-- `AUTHORIZED_PRICE_FEED_TOKEN`: 任意の Bearer token
+## ライセンス
 
-返却値の形式：
-
-```json
-{
-  "prices": [
-    { "id": "BTCJPY", "at": "2026-10-30T01:25:00Z", "value": 10000000 },
-    { "id": "NIKKEI225", "at": "2026-10-29T06:00:00Z", "value": 42000 }
-  ]
-}
-```
-
-サポート銘柄ID: `USDJPY`, `EURJPY`, `BTCJPY`, `ETHJPY`, `NIKKEI225`, `TOPIX`, `SP500`, `NASDAQ`。
-為替・暗号資産はUTCの毎時に、指数はUTCの日付単位に正規化します。公開可能なデータの権利がある場合のみ利用してください。
-
-詳しい仕様は [docs/architecture.md](docs/architecture.md) と [docs/data-sources.md](docs/data-sources.md) を参照してください。
-
-## Deployment setup (one-time)
-
-1. `develop` の PR を `main` にマージ
-2. GitHub の **Settings → Pages → Build and deployment → Source** で **GitHub Actions** を選択
-3. **Actions** タブから **Collect prices and publish** を手動実行（Collect を有効）。以降は毎時定期実行
-4. 必要なら Settings → Actions → General → Workflow permissions で書き込み権限を許可（通常は workflow の `permissions` 指定で十分）
-5. 対応する権利を取得した場合のみ、上記の任意 Secrets を設定する
-
-Vercel でホストする場合は Vite アプリとしてデプロイできます。ただし現在の公開ワークフローは GitHub Pages 向けです。
-
-## Licensing
-
-ソースコードは MIT License（ルートの `LICENSE`）。外部の市場データには**別のライセンス**が適用されます。MIT は価格データの再配布権を付与しません。
+[MIT License](LICENSE)。外部から取得する価格データの利用条件は各提供元に従います。

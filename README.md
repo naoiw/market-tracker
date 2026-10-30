@@ -22,6 +22,12 @@ GitHub Actions で価格データを定期取得し、React と TypeScript で�
 
 本番とプレビューは、1つのGitHub Pagesサイト（`github-pages`環境）内の別々のパスで公開します。プレビューも、公開済みの本番価格データを使います。
 
+## データ取得
+
+現在、USD/JPY・EUR/JPYのECB日次参考レートを、GitHub Actionsで**毎時17分（日本時間）に取得確認**しています。BTC/JPY・ETH/JPY・日経平均・TOPIX・S&P 500・NASDAQ Compositeは外部フィード未接続のため未取得です。フィードを接続した場合は共通の毎時ジョブで取得し、暗号資産は時間単位、指数は日付単位で保存します。
+
+銘柄ごとの取得試行間隔・公開データの更新頻度・接続状態は[データソースと利用条件](docs/data-sources.md#銘柄別の取得頻度)を参照してください。
+
 ## 技術スタック
 
 - **TypeScript / React 19 / Recharts** — UI・価格グラフ

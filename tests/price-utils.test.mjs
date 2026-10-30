@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSample, mergePrices, parseFrankfurterRates, parseAuthorizedFeed } from '../scripts/price-utils.mjs';
+import { normalizeSample, mergePrices, parseFrankfurterRates, parseAuthorizedFeed, parseBitbankTickers } from '../scripts/price-utils.mjs';
 
 const empty = () => ({ version: 1, updatedAt: null, series: {} });
 
@@ -43,4 +43,40 @@ test('approved feed normalizes hourly and daily timestamps', () => {
 test('unknown assets and future readings are rejected', () => {
   assert.throws(() => parseAuthorizedFeed({ prices: [{ id: 'BAD', at: '2026-10-30', value: 5 }] }, new Date('2026-10-30T10:00:00Z')));
   assert.throws(() => parseAuthorizedFeed({ prices: [{ id: 'BTCJPY', at: '2026-10-31T10:00:00Z', value: 5 }] }, new Date('2026-10-30T10:00:00Z')));
+});
+
+
+test('bitbank JPY ticker parses both symbols at UTC hourly timestamps', () => {
+  const now = new Date('2026-10-30T10:30:00.000Z');
+  const payload = { success: 1, data: [
+    { pair: 'btc_jpy', last: '12345678', timestamp: Date.parse('2026-10-30T10:17:00Z') },
+    { pair: 'eth_jpy', last: '650000', timestamp: Date.parse('2026-10-30T10:16:00Z') },
+    { pair: 'xrp_jpy', last: '200', timestamp: Date.parse('2026-10-30T10:16:00Z') }
+  ] };
+  assert.deepEqual(parseBitbankTickers(payload, now), [
+    { id: 'BTCJPY', at: '2026-10-30T10:00:00.000Z', value: 12345678 },
+    { id: 'ETHJPY', at: '2026-10-30T10:00:00.000Z', value: 650000 }
+  ]);
+});
+
+test('bitbank parser rejects invalid API responses and nonpositive prices', () => {
+  const now = new Date('2026-10-30T10:30:00.000Z');
+  assert.throws(() => parseBitbankTickers({ success: 0, data: [] }, now));
+  assert.throws(() => parseBitbankTickers({ success: 1, data: [{ pair: 'btc_jpy', last: '0', timestamp: now.getTime() }] }, now));
+});
+
+test('bitbank parser rejects stale or future snapshots', () => {
+  const now = new Date('2026-10-30T10:30:00.000Z');
+  for (const timestamp of [Date.parse('2026-10-30T06:00:00Z'), Date.parse('2026-10-30T11:00:00Z')]) {
+    assert.throws(() => parseBitbankTickers({ success: 1, data: [{ pair: 'eth_jpy', last: '1000', timestamp }] }, now));
+  }
+});
+
+test('bitbank snapshot is idempotent when already collected for the hour', () => {
+  const now = new Date('2026-10-30T10:30:00.000Z');
+  const payload = { success: 1, data: [{ pair: 'btc_jpy', last: '12000000', timestamp: Date.parse('2026-10-30T10:17:00Z') }] };
+  const parsed = parseBitbankTickers(payload, now);
+  const first = mergePrices(empty(), parsed, now);
+  assert.equal(first.changed, true);
+  assert.equal(mergePrices(first.book, parsed, now).changed, false);
 });

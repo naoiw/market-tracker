@@ -65,6 +65,35 @@ export function parseFrankfurterRates(rows) {
   return samples;
 }
 
+
+/**
+ * Convert bitbank's public JPY tickers into hourly observations.
+ * A ticker is a last executed trade, not a mid-price or a USD quote.
+ * We intentionally do not invent observations for missing/stale symbols.
+ */
+export function parseBitbankTickers(payload, now = new Date()) {
+  if (payload?.success !== 1 || !Array.isArray(payload.data)) {
+    throw new Error('Unexpected bitbank tickers response');
+  }
+  const result = [];
+  for (const [pair, id] of [['btc_jpy', 'BTCJPY'], ['eth_jpy', 'ETHJPY']]) {
+    const entry = payload.data.find((item) => item?.pair === pair);
+    if (!entry) continue;
+    const price = Number(entry.last);
+    const stamp = Number(entry.timestamp);
+    if (!Number.isFinite(price) || price <= 0) throw new Error('Invalid bitbank price for ' + pair);
+    if (!Number.isSafeInteger(stamp) || stamp <= 0 ||
+        stamp > now.getTime() + 5 * 60_000 ||
+        now.getTime() - stamp > 3 * 3600_000) {
+      throw new Error('Missing or stale bitbank timestamp for ' + pair);
+    }
+    const at = new Date(Math.floor(stamp / 3600_000) * 3600_000).toISOString();
+    result.push(normalizeSample({ id, at, value: price, interval: 'hour' }));
+  }
+  if (!result.length) throw new Error('No BTC/JPY or ETH/JPY ticker in bitbank response');
+  return result;
+}
+
 export function mergePrices(book, incoming, now = new Date()) {
   if (book?.version !== 1 || !book?.series || typeof book.series !== 'object') {
     throw new Error('Unrecognized price file schema');

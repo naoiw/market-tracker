@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { parseAuthorizedFeed, parseFrankfurterRates, mergePrices } from './price-utils.mjs';
+import { parseAuthorizedFeed, parseFrankfurterRates, parseBitbankTickers, mergePrices } from './price-utils.mjs';
 
 const dataPath = new URL('../public/data/prices.json', import.meta.url);
 const now = new Date();
@@ -32,6 +32,13 @@ tasks.push((async () => {
     : 'https://api.frankfurter.dev/v2/rates?providers=ecb&base=EUR&quotes=JPY,USD';
   const rows = await fetchJSON(endpoint);
   return parseFrankfurterRates(rows);
+})());
+
+// Public bitbank BTC/JPY and ETH/JPY ticker snapshot (no API key required).
+// Data shown on the site is credited to bitbank; review downstream reuse terms.
+tasks.push((async () => {
+  const payload = await fetchJSON('https://public.bitbank.cc/tickers_jpy');
+  return parseBitbankTickers(payload, now);
 })());
 
 // User-supplied feed: only connect sources licensed for public data redistribution.

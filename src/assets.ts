@@ -3,16 +3,16 @@ import type { Asset } from './types';
 export const assets: Asset[] = [
   {
     id: 'USDJPY', name: '米ドル / 日本円', ticker: 'USD / JPY',
-    category: 'forex', currency: 'JPY', source: 'Frankfurter',
-    sourceUrl: 'https://frankfurter.dev/',
-    detail: '中央銀行由来の日次参考レート。時間足ではありません。',
+    category: 'forex', currency: 'JPY', source: 'ECB / Frankfurter',
+    sourceUrl: 'https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html',
+    detail: 'ECBの公表値を使った日次参考レート（USD/JPYはクロス計算）。時間足ではありません。',
     color: '#70e2ca'
   },
   {
     id: 'EURJPY', name: 'ユーロ / 日本円', ticker: 'EUR / JPY',
-    category: 'forex', currency: 'JPY', source: 'Frankfurter',
-    sourceUrl: 'https://frankfurter.dev/',
-    detail: '中央銀行由来の日次参考レート。時間足ではありません。',
+    category: 'forex', currency: 'JPY', source: 'ECB / Frankfurter',
+    sourceUrl: 'https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html',
+    detail: 'ECBの公表値を使った日次参考レート（USD/JPYはクロス計算）。時間足ではありません。',
     color: '#76b7ff'
   },
   {

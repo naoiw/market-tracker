@@ -28,8 +28,8 @@ tasks.push((async () => {
   const firstRun = !(book.series.USDJPY?.length && book.series.EURJPY?.length);
   const from = new Date(now.getTime() - 90 * 86400_000).toISOString().slice(0, 10);
   const endpoint = firstRun
-    ? 'https://api.frankfurter.dev/v2/rates?base=EUR&quotes=JPY,USD&from=' + from
-    : 'https://api.frankfurter.dev/v2/rates?base=EUR&quotes=JPY,USD';
+    ? 'https://api.frankfurter.dev/v2/rates?providers=ecb&base=EUR&quotes=JPY,USD&from=' + from
+    : 'https://api.frankfurter.dev/v2/rates?providers=ecb&base=EUR&quotes=JPY,USD';
   const rows = await fetchJSON(endpoint);
   return parseFrankfurterRates(rows);
 })());

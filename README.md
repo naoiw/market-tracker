@@ -23,11 +23,13 @@ npm run build
 
 ## What works without any API keys
 
-- 為替：USD/JPY、EUR/JPY の**日次参考レート**（Frankfurter 経由、ECB 等の公的機関データ）。初回は過去約90日分を取得
+- 為替：USD/JPY、EUR/JPY の**日次参考レート**（Frankfurter 経由、ECB 公表データ）。初回は過去約90日分を取得
 - 取得履歴の重複排除、日時順ソート、価格検証、180日より古い観測点の除外
 - スマホ対応のカード、期間切替グラフ、出典・更新日時・欠損状態の表示
-- 毎時17分（JST）に GitHub Actions が価格収集・保存・Pages 再デプロイ
+- 毎時17分（JST）に GitHub Actions が収集。データが変わった場合のみ保存・Pages 再デプロイ
 - 手動ワークフロー実行、PRでのビルド・テスト
+
+**出典：ECB statistics（Frankfurter 経由）。EUR/JPY と EUR/USD を基に USD/JPY をクロス計算しています。**
 
 **注意：Frankfurter の参考為替レートは日次更新です。Actions を毎時実行してもレートが1時間ごとに変わるわけではありません。**
 

@@ -81,16 +81,6 @@ jobs:
           AUTHORIZED_PRICE_FEED_TOKEN: ${{ secrets.AUTHORIZED_PRICE_FEED_TOKEN }}
         run: node scripts/collect.mjs
 
-      - name: Report collection attempt
-        if: ${{ always() && steps.collect.outcome != 'skipped' }}
-        run: |
-          {
-            echo '### Price collection'
-            echo '- Trigger: \`${{ github.event_name }}\`'
-            echo '- Outcome: \`${{ steps.collect.outcome }}\`'
-            echo '- Source: main'
-          } >> "$GITHUB_STEP_SUMMARY"
-
       - name: Check price history
         id: price-diff
         working-directory: production
@@ -100,6 +90,17 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Report collection attempt
+        if: ${{ always() && steps.collect.outcome != 'skipped' }}
+        run: |
+          {
+            echo '### Price collection'
+            echo '- Trigger: `${{ github.event_name }}`'
+            echo '- Outcome: `${{ steps.collect.outcome }}`'
+            echo '- Data changed: `${{ steps.price-diff.outputs.changed || 'not checked' }}`'
+            echo '- Data branch: `main`'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Commit price history on main
         if: steps.price-diff.outputs.changed == 'true'
         working-directory: production

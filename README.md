@@ -1,6 +1,6 @@
 # Market Tracker
 
-GitHub Actions で価格データを定期取得し、React と TypeScript で可視化するマーケットダッシュボードです。
+GitHub Actions で価格データを定期取得し、React と TypeScript で可視化する非商用のマーケットダッシュボードです。
 
 ## 主な機能
 
@@ -62,7 +62,11 @@ pnpm collect  # 外部APIから価格を取得し、価格JSONを更新
 ## ディレクトリ構成
 
 - `index.html` — 画面のエントリポイント
-- `src/` — Reactコンポーネント・画面状態・CSS
+- `src/App.tsx` — 画面全体・表示状態・チャート
+- `src/components/` — 価格カードなどのUIコンポーネント
+- `src/pricing.ts` — 日付・価格の書式設定、期間抽出、参考USD換算
+- `src/assets.ts` / `src/types.ts` — 銘柄定義と型
+- `src/styles.css` — レスポンシブUIのスタイル
 - `scripts/` — API取得・データ検証・履歴の保存
 - `public/data/` — 公開する価格データ（JSON）
 - `tests/` — 自動テスト
@@ -79,4 +83,4 @@ pnpm collect  # 外部APIから価格を取得し、価格JSONを更新
 
 ## ライセンス
 
-[MIT License](LICENSE)。外部から取得する価格データの利用条件は各提供元に従います。
+[MIT License](LICENSE)。本アプリは非商用の個人制作物です。**ソースコードのMITライセンスは第三者の価格データに適用されません。** APIの公開利用条件と、取得データを公開JSONで保存・再配布する権利は別途確認が必要です（[データソースと利用条件](docs/data-sources.md)）。

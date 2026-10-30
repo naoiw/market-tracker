@@ -21,51 +21,63 @@ async function fetchJSON(url, headers = {}) {
   }
 }
 
-const tasks = [];
-// Frankfurter publishes central-bank reference rates once per business day.
-// Polling hourly does NOT make these intraday quotes.
-tasks.push((async () => {
-  const firstRun = !(book.series.USDJPY?.length && book.series.EURJPY?.length);
-  const from = new Date(now.getTime() - 90 * 86400_000).toISOString().slice(0, 10);
-  const endpoint = firstRun
-    ? 'https://api.frankfurter.dev/v2/rates?providers=ecb&base=EUR&quotes=JPY,USD&from=' + from
-    : 'https://api.frankfurter.dev/v2/rates?providers=ecb&base=EUR&quotes=JPY,USD';
-  const rows = await fetchJSON(endpoint);
-  return parseFrankfurterRates(rows);
-})());
+// Providers run independently: a transient failure must not discard other prices.
+const sources = [
+  {
+    name: 'ECB / Frankfurter',
+    load: async () => {
+      const firstRun = !(book.series.USDJPY?.length && book.series.EURJPY?.length);
+      const from = new Date(now.getTime() - 90 * 86400_000).toISOString().slice(0, 10);
+      const endpoint = firstRun
+        ? 'https://api.frankfurter.dev/v2/rates?providers=ecb&base=EUR&quotes=JPY,USD&from=' + from
+        : 'https://api.frankfurter.dev/v2/rates?providers=ecb&base=EUR&quotes=JPY,USD';
+      return parseFrankfurterRates(await fetchJSON(endpoint));
+    }
+  },
+  {
+    name: 'bitbank',
+    load: async () => parseBitbankTickers(
+      await fetchJSON('https://public.bitbank.cc/tickers_jpy'), now
+    )
+  }
+];
 
-// Public bitbank BTC/JPY and ETH/JPY ticker snapshot (no API key required).
-// Data shown on the site is credited to bitbank; review downstream reuse terms.
-tasks.push((async () => {
-  const payload = await fetchJSON('https://public.bitbank.cc/tickers_jpy');
-  return parseBitbankTickers(payload, now);
-})());
-
-// User-supplied feed: only connect sources licensed for public data redistribution.
 if (process.env.AUTHORIZED_PRICE_FEED_URL) {
-  tasks.push((async () => {
-    const url = new URL(process.env.AUTHORIZED_PRICE_FEED_URL);
-    if (url.protocol !== 'https:') throw new Error('Authorized feed must use HTTPS');
-    const headers = process.env.AUTHORIZED_PRICE_FEED_TOKEN
-      ? { Authorization: 'Bearer ' + process.env.AUTHORIZED_PRICE_FEED_TOKEN }
-      : {};
-    return parseAuthorizedFeed(await fetchJSON(url.toString(), headers), now);
-  })());
+  sources.push({
+    name: 'Authorized feed',
+    load: async () => {
+      const url = new URL(process.env.AUTHORIZED_PRICE_FEED_URL);
+      if (url.protocol !== 'https:') throw new Error('Authorized feed must use HTTPS');
+      const headers = process.env.AUTHORIZED_PRICE_FEED_TOKEN
+        ? { Authorization: 'Bearer ' + process.env.AUTHORIZED_PRICE_FEED_TOKEN }
+        : {};
+      return parseAuthorizedFeed(await fetchJSON(url.toString(), headers), now);
+    }
+  });
 }
 
-const results = await Promise.allSettled(tasks);
+const results = await Promise.allSettled(sources.map((source) => source.load()));
 const samples = [];
-for (const item of results) {
-  if (item.status === 'fulfilled') samples.push(...item.value);
-  else console.error('Price source unavailable:', item.reason);
+for (const [index, result] of results.entries()) {
+  if (result.status === 'fulfilled') {
+    samples.push(...result.value);
+  } else {
+    console.error(sources[index].name + ' unavailable:', result.reason);
+  }
 }
-if (results.every((x) => x.status === 'rejected')) {
+if (results.every((result) => result.status === 'rejected')) {
   throw new Error('All price sources failed');
 }
 
-// An approved current FX source supersedes the daily reference series.
-const liveIds = new Set(samples.filter((p) => !p.at.endsWith('T00:00:00.000Z')).map((p) => p.id));
-const merged = mergePrices(book, samples.filter((p) => !liveIds.has(p.id) || !p.at.endsWith('T00:00:00.000Z')), now);
+// An approved intraday FX source supersedes ECB's daily reference for that ID.
+// The authorized source is appended last so its observations take precedence.
+const intradayIds = new Set(
+  samples.filter((point) => !point.at.endsWith('T00:00:00.000Z')).map((point) => point.id)
+);
+const selectedSamples = samples.filter((point) =>
+  !intradayIds.has(point.id) || !point.at.endsWith('T00:00:00.000Z')
+);
+const merged = mergePrices(book, selectedSamples, now);
 if (merged.changed) {
   await writeFile(dataPath, JSON.stringify(merged.book, null, 2) + '\n');
   console.log('Saved ' + samples.length + ' samples at ' + merged.book.updatedAt);

@@ -40,14 +40,23 @@ git push origin develop
 
 ## 実装ファイル
 
-- `src/App.tsx` — グラフ・カード・表示状態
+- `src/App.tsx` — 画面全体、カテゴリ・期間選択、グラフとデータ読込
+- `src/components/PriceCard.tsx` — 銘柄カード。選択状態・最新値・概算USDを表示
+- `src/pricing.ts` — 日付・価格の書式設定、期間抽出、変化率、概算USDの計算
 - `src/assets.ts` — 銘柄定義と出典
 - `src/types.ts` — 型定義
-- `src/styles.css` — レスポンシブなUIスタイル
+- `src/styles.css` — レスポンシブなUIスタイル（ルール単位で整形）
 - `scripts/collect.mjs` — APIからの取得とJSON保存
-- `scripts/price-utils.mjs` — 取得データの検証・統合
+- `scripts/price-utils.mjs` — 取得データの検証・履歴統合・全銘柄の古い観測値の削除
 - `public/data/prices.json` — 公開可能な価格の履歴（正本は`main`）
-- `tests/price-utils.test.mjs` — Node.js標準テストランナーによる回帰テスト
+- `tests/price-utils.test.mjs` — Node.js標準テストランナーによる回帰テスト（取得データ・重複・日付境界・180日保持）
+
+## 実装上の注意
+
+- 価格データの検証・正規化は`price-utils.mjs`、表示用の計算は`pricing.ts`に置き、Reactコンポーネントに取得元ごとの処理を書かない。
+- 取得元の障害は個別にログへ記録し、成功した他の取得元のデータは保存する。全取得元が失敗した場合のみ収集処理を失敗とする。
+- 180日を超えた履歴の整理は、新しい観測値が届かなかった銘柄も含めて行う。既存データは破壊的に変更しない。
+- 実データを追加する場合は、取得APIの利用条件だけでなく、公開JSONの再配布条件も確認する。
 
 ## UI文言の方針
 

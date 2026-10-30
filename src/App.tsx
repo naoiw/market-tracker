@@ -112,25 +112,18 @@ export default function App() {
     <div className="site-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-symbol">▥</span><span>MARKET<span className="brand-light">TRACKER</span></span></div>
-        <a href="https://github.com/naoiw/market-tracker" target="_blank" rel="noreferrer" className="repo-link">GitHub ↗</a>
       </header>
 
       <main>
-        <div className="hero">
-          <div><div className="eyebrow"><span className="live-dot"/> AUTOMATED MARKET OVERVIEW</div>
-            <h1>市場の動きを、<br/><span>ひと目で。</span></h1>
-            <p>為替・暗号資産・株価指数の価格を追跡するマーケットダッシュボード。</p>
-          </div>
-          <div className="update-panel">
-            <span className="field-label">データ最終更新</span>
-            <strong>{loading ? '読み込み中…' : formatDate(book.updatedAt, true)}</strong>
-            <span className="muted small">{loadedCount} / {assets.length} 銘柄にデータあり</span>
-          </div>
-        </div>
-
         {error && <div className="error-banner" role="alert">価格データを読み込めませんでした：{error}</div>}
         <section aria-label="資産一覧">
-          <div className="section-heading"><h2>マーケット一覧</h2><span className="muted small">カードを選択すると推移を表示します</span></div>
+          <div className="section-heading">
+            <h1>マーケット一覧</h1>
+            <div className="market-status">
+              <span>最終更新：{loading ? '読み込み中…' : formatDate(book.updatedAt, true)}</span>
+              <span>取得済み {loadedCount}/{assets.length} 銘柄</span>
+            </div>
+          </div>
           <div className="filter-row" role="group" aria-label="資産カテゴリー">
             {categories.map((category) => <button
               key={category.id} type="button"
@@ -209,7 +202,7 @@ export default function App() {
         </section>
         <p className="disclaimer">※ 本サイトは情報提供を目的とした試作ツールです。実際の約定価格ではなく、投資判断への利用を保証しません。価格取得には遅延・欠損が生じる場合があります。</p>
       </main>
-      <footer><span>MARKET TRACKER</span><span>Built with React · TypeScript · GitHub Actions</span></footer>
+      <footer><span>MARKET TRACKER</span><a href="https://github.com/naoiw/market-tracker" target="_blank" rel="noreferrer" className="repo-link">GitHub ↗</a></footer>
     </div>
   );
 }

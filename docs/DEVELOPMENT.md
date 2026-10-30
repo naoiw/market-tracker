@@ -49,6 +49,12 @@ git push origin develop
 - `public/data/prices.json` — 公開可能な価格の履歴（正本は`main`）
 - `tests/price-utils.test.mjs` — Node.js標準テストランナーによる回帰テスト
 
+## UI文言の方針
+
+- 画面内のテキストは機能名・数値・状態・操作方法を簡潔に記述する。
+- キャッチコピー、宣伝調の見出し、抽象的・装飾的な表現は原則使用しない。
+- 説明文が不要な場合は追加しない。
+
 ## CI
 
 - `.github/workflows/validate-develop.yml` — `develop` pushとPRを検証。失敗したコードはプレビューに配信しません。

@@ -45,7 +45,6 @@ test('unknown assets and future readings are rejected', () => {
   assert.throws(() => parseAuthorizedFeed({ prices: [{ id: 'BTCJPY', at: '2026-10-31T10:00:00Z', value: 5 }] }, new Date('2026-10-30T10:00:00Z')));
 });
 
-
 test('bitbank JPY ticker parses both symbols at UTC hourly timestamps', () => {
   const now = new Date('2026-10-30T10:30:00.000Z');
   const payload = { success: 1, data: [
@@ -79,4 +78,40 @@ test('bitbank snapshot is idempotent when already collected for the hour', () =>
   const first = mergePrices(empty(), parsed, now);
   assert.equal(first.changed, true);
   assert.equal(mergePrices(first.book, parsed, now).changed, false);
+});
+
+test('merging a different asset also prunes expired BTC/JPY history', () => {
+  const now = new Date('2026-10-30T12:00:00Z');
+  const existing = {
+    version: 1, updatedAt: '2026-09-01T00:00:00Z',
+    series: {
+      BTCJPY: [
+        { at: '2026-01-01T09:00:00.000Z', value: 100 },
+        { at: '2026-10-29T09:00:00.000Z', value: 200 }
+      ],
+      EURJPY: [{ at: '2026-10-29T00:00:00.000Z', value: 175 }]
+    }
+  };
+  const result = mergePrices(existing, [], now);
+  assert.equal(result.changed, true);
+  assert.deepEqual(result.book.series.BTCJPY, [
+    { at: '2026-10-29T09:00:00.000Z', value: 200 }
+  ]);
+  assert.equal(result.book.updatedAt, now.toISOString());
+  assert.deepEqual(existing.series.BTCJPY.length, 2); // Input is not mutated.
+});
+
+test('different hours including midnight UTC remain distinct observations', () => {
+  const samples = [
+    { id: 'BTCJPY', at: '2026-10-30T00:00:00.000Z', value: 100 },
+    { id: 'BTCJPY', at: '2026-10-30T01:00:00.000Z', value: 110 }
+  ];
+  const now = new Date('2026-10-30T02:00:00Z');
+  const result = mergePrices(empty(), samples, now);
+  assert.equal(result.book.series.BTCJPY.length, 2);
+  assert.equal(mergePrices(result.book, samples, now).changed, false);
+});
+
+test('rejects an invalid existing series instead of silently modifying public data', () => {
+  assert.throws(() => mergePrices({ version: 1, updatedAt: null, series: { BTCJPY: {} } }, []));
 });

@@ -71,12 +71,17 @@ export function parseFrankfurterRates(rows) {
  * A ticker is a last executed trade, not a mid-price or a USD quote.
  * We intentionally do not invent observations for missing/stale symbols.
  */
+const BITBANK_JPY_PAIRS = [
+  ['btc_jpy', 'BTCJPY'],
+  ['eth_jpy', 'ETHJPY']
+];
+
 export function parseBitbankTickers(payload, now = new Date()) {
   if (payload?.success !== 1 || !Array.isArray(payload.data)) {
     throw new Error('Unexpected bitbank tickers response');
   }
   const result = [];
-  for (const [pair, id] of [['btc_jpy', 'BTCJPY'], ['eth_jpy', 'ETHJPY']]) {
+  for (const [pair, id] of BITBANK_JPY_PAIRS) {
     const entry = payload.data.find((item) => item?.pair === pair);
     if (!entry) continue;
     const price = Number(entry.last);
@@ -94,28 +99,60 @@ export function parseBitbankTickers(payload, now = new Date()) {
   return result;
 }
 
+const HISTORY_DAYS = 180;
+const DAY_MS = 86400_000;
+
+/**
+ * Merge validated observations and trim the history of ALL assets, even when
+ * a particular provider hasn't produced a new sample in this run.
+ * Timestamps are the unique keys for each asset.
+ */
 export function mergePrices(book, incoming, now = new Date()) {
-  if (book?.version !== 1 || !book?.series || typeof book.series !== 'object') {
+  if (book?.version !== 1 || !book?.series || Array.isArray(book.series) ||
+      typeof book.series !== 'object') {
     throw new Error('Unrecognized price file schema');
   }
-  const result = { version: 1, updatedAt: book.updatedAt ?? null, series: { ...book.series } };
+
+  const cutoff = now.getTime() - HISTORY_DAYS * DAY_MS;
+  const series = {};
   let changed = false;
-  const cutoff = now.getTime() - 180 * 24 * 3600_000;
+
+  for (const [id, existing] of Object.entries(book.series)) {
+    if (!SUPPORTED_IDS.has(id) || !Array.isArray(existing)) {
+      throw new Error('Invalid stored series for ' + id);
+    }
+    const kept = existing.filter((point) =>
+      Number.isFinite(Date.parse(point?.at)) && Date.parse(point.at) >= cutoff
+    );
+    if (kept.length !== existing.length) changed = true;
+    series[id] = new Map(kept.map(({ at, value }) => [at, value]));
+  }
+
   for (const raw of incoming) {
     const sample = normalizeSample({
       ...raw,
-      interval: raw.at.endsWith('T00:00:00.000Z') ? (raw.interval ?? 'day') : (raw.interval ?? 'hour')
+      interval: raw.interval ?? (raw.at.endsWith('T00:00:00.000Z') ? 'day' : 'hour')
     });
-    if (new Date(sample.at).getTime() < cutoff) continue;
-    const points = new Map((result.series[sample.id] ?? []).map((p) => [p.at, p.value]));
-    if (points.get(sample.at) !== sample.value) {
-      points.set(sample.at, sample.value);
+    if (Date.parse(sample.at) < cutoff) continue;
+    const observations = series[sample.id] ??= new Map();
+    if (observations.get(sample.at) !== sample.value) {
+      observations.set(sample.at, sample.value);
       changed = true;
     }
-    result.series[sample.id] = Array.from(points, ([at, value]) => ({ at, value }))
-      .filter((p) => new Date(p.at).getTime() >= cutoff)
+  }
+
+  const sorted = {};
+  for (const [id, observations] of Object.entries(series)) {
+    sorted[id] = Array.from(observations, ([at, value]) => ({ at, value }))
       .sort((a, b) => a.at.localeCompare(b.at));
   }
-  if (changed) result.updatedAt = now.toISOString();
-  return { book: result, changed };
+
+  return {
+    book: {
+      version: 1,
+      updatedAt: changed ? now.toISOString() : (book.updatedAt ?? null),
+      series: sorted
+    },
+    changed
+  };
 }

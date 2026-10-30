@@ -23,13 +23,13 @@ BTC・ETHはbitbankの公開API（`https://public.bitbank.cc/tickers_jpy`）を�
 | --- | --- | --- | --- |
 | USD/JPY | 有効 | ECBの営業日ごとの日次参考値からクロス計算 | [ECB](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) / [Frankfurter](https://frankfurter.dev/) |
 | EUR/JPY | 有効 | ECBの営業日ごとの日次参考値 | ECB / Frankfurter |
-| BTC/JPY、ETH/JPY | 有効（main反映後に定期収集） | 毎時スナップショット | [bitbank Public API](https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api_JP.md) |
+| BTC/JPY、ETH/JPY | 取得処理が本番に導入済み | 毎時スナップショット | [bitbank Public API](https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api_JP.md) |
 | 日経平均、TOPIX | 接続待ち | 終値を日次単位で保存可能 | 外部フィード |
 | S&P 500、NASDAQ | 接続待ち | 終値を日次単位で保存可能 | 外部フィード |
 
 ECBのデータはFrankfurter API経由で取得しています。EUR/JPYとEUR/USDからUSD/JPYを計算します。**Actionsの毎時実行は、ECBレートの毎時更新を意味しません。**
 
-bitbank APIでは`btc_jpy`と`eth_jpy`の`last`（直近の約定価格）を採用し、APIの`timestamp`（ミリ秒のUnix時刻）からUTCの時単位に揃えて記録します。取得できない銘柄や古い約定時刻を持つ結果は無理に補完せず、エラーとして扱います。最初の公開価格は本番`main`で収集が走った時点から蓄積され、過去の観測履歴を捏造しません。
+bitbank APIでは`btc_jpy`と`eth_jpy`の`last`（直近の約定価格）を採用し、APIの`timestamp`（ミリ秒のUnix時刻）からUTCの時単位に揃えて記録します。取得できない銘柄や古い約定時刻を持つ結果は無理に補完せず、エラーとして扱います。最初の公開価格は本番`main`の収集処理で実データが正常に取得できた時点から蓄積され、過去の観測履歴を捏造しません。
 
 **USD併記**はBTC/JPY・ETH/JPYをECBのUSD/JPY日次参考値で割った概算額であり、実際のBTC/USD・ETH/USD市場価格ではありません。為替レートが古い場合（暗号資産の観測時刻より5日以上前）は表示しません。
 

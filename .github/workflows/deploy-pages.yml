@@ -9,9 +9,10 @@ on:
     types: [completed]
     branches: [develop]
   schedule:
-    # Hourly at :17 JST; GitHub may delay or skip scheduled runs.
+    # At minute :17 in every hour, in both UTC and JST.
+    # No timezone override is needed for a schedule covering all 24 hours.
+    # GitHub may delay or drop scheduled runs.
     - cron: '17 * * * *'
-      timezone: 'Asia/Tokyo'
   workflow_dispatch:
     inputs:
       collect:
@@ -66,14 +67,29 @@ jobs:
             preview/pnpm-lock.yaml
 
       - name: Collect current prices
+        id: collect
         if: >-
+          github.event_name == 'push' ||
           github.event_name == 'schedule' ||
           (github.event_name == 'workflow_dispatch' && inputs.collect)
+        # A transient API outage must not prevent publishing a main-branch update.
+        # Scheduled runs still fail visibly if every provider is unavailable.
+        continue-on-error: ${{ github.event_name == 'push' }}
         working-directory: production
         env:
           AUTHORIZED_PRICE_FEED_URL: ${{ secrets.AUTHORIZED_PRICE_FEED_URL }}
           AUTHORIZED_PRICE_FEED_TOKEN: ${{ secrets.AUTHORIZED_PRICE_FEED_TOKEN }}
         run: node scripts/collect.mjs
+
+      - name: Report collection attempt
+        if: ${{ always() && steps.collect.outcome != 'skipped' }}
+        run: |
+          {
+            echo '### Price collection'
+            echo '- Trigger: \`${{ github.event_name }}\`'
+            echo '- Outcome: \`${{ steps.collect.outcome }}\`'
+            echo '- Source: main'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check price history
         id: price-diff

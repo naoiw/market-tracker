@@ -1,27 +1,47 @@
-# Market data sources and permissions
+# データソースと利用条件
 
-| Instrument | Enabled by default? | Frequency | Source |
-|---|---|---|---|
-| USD/JPY | Yes | Official reference, daily, calculated cross rate | [ECB](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) via [Frankfurter](https://frankfurter.dev/) |
-| EUR/JPY | Yes | Official reference, daily | ECB via Frankfurter |
-| BTC/JPY, ETH/JPY | No | Hourly collector ready | User-authorized feed |
-| Nikkei 225, TOPIX | No | Daily collector ready | User-authorized feed |
-| S&P 500, NASDAQ | No | Daily collector ready | User-authorized feed |
+## データ一覧
 
-Frankfurter offers a public API without a key. This app pins the ECB source; USD/JPY is calculated from ECB EUR/JPY and EUR/USD reference rates. Source attribution: ECB statistics. These rates are **not live FX quotes**, even though they are polled hourly.
+| データ | 状態 | 実際の更新間隔 | 情報元 |
+| --- | --- | --- | --- |
+| USD/JPY | 有効 | ECBの営業日ごとの日次参考値からクロス計算 | [ECB](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) / [Frankfurter](https://frankfurter.dev/) |
+| EUR/JPY | 有効 | ECBの営業日ごとの日次参考値 | ECB / Frankfurter |
+| BTC/JPY、ETH/JPY | 接続待ち | 利用許諾済みフィードは時間足に正規化可能 | 外部フィード |
+| 日経平均、TOPIX | 接続待ち | 終値を日次単位で保存可能 | 外部フィード |
+| S&P 500、NASDAQ | 接続待ち | 終値を日次単位で保存可能 | 外部フィード |
 
-## Why market indices and cryptocurrency are opt-in
+ECBのデータはFrankfurter API経由で取得しています。EUR/JPYとEUR/USDからUSD/JPYを計算します。**Actionsの毎時実行は、ECBレートの毎時更新を意味しません。**
 
-Publishing price history to both a public GitHub repo and GitHub Pages constitutes making it available to others. Many free finance APIs only allow personal/internal use, prohibit data redistribution, or require express authorization for public websites. The Nikkei index in particular has explicit display and redistribution conditions, even when obtained through FRED. We therefore do not scrape Yahoo, FRED's copyrighted Nikkei series, or Coinbase and commit that market data to this public repository by default.
+## 市場データの権利
 
-Review provider terms, display requirements, retention limits and redistribution rights, and only then connect a licensed feed. A free API key alone does **not** grant rights to mirror the API's response into publicly downloadable JSON.
+無料APIで取得できるデータでも、公開Webサイトへの表示やGitHubの公開リポジトリへの長期保存・再配布が許されるとは限りません。価格データの利用許諾はソースコードのMITライセンスとは別です。
 
-### Useful reference links
+データソースの権利が確認できるまでは、暗号資産・株価指数の価格を外部サイトからスクレイピングしたり、公開JSONへコピーしたりしません。
 
-- [Nikkei official license](https://indexes.nikkei.co.jp/nkave/license/index.en.html)
-- [FRED Nikkei series copyright notes](https://fred.stlouisfed.org/series/NIKKEI225)
+## 利用許諾済みのフィードの接続
+
+必要に応じてGitHubの**Settings → Secrets and variables → Actions**で設定します。
+
+- `AUTHORIZED_PRICE_FEED_URL` — HTTPSのJSONエンドポイント
+- `AUTHORIZED_PRICE_FEED_TOKEN` — 任意のBearerトークン
+
+期待する形式：
+
+```json
+{
+  "prices": [
+    {"id": "BTCJPY", "at": "2026-10-30T01:25:00Z", "value": 10000000},
+    {"id": "NIKKEI225", "at": "2026-10-29T06:00:00Z", "value": 42000}
+  ]
+}
+```
+
+対象ID：`USDJPY`、`EURJPY`、`BTCJPY`、`ETHJPY`、`NIKKEI225`、`TOPIX`、`SP500`、`NASDAQ`。時系列はUTCで保存し、暗号資産・為替は毎時、株価指数は日付単位に正規化します。
+
+## 参考リンク
+
+- [ECB統計の利用条件](https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html)
 - [Frankfurter API](https://frankfurter.dev/)
-- [ECB free-reuse conditions (attribution required)](https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html)
-- [Coinbase market data terms](https://www.coinbase.com/legal/market_data)
-
-The dashboard includes source labels and deliberately does not show fictitious figures for unconfigured assets.
+- [日経平均の利用許諾案内](https://indexes.nikkei.co.jp/nkave/license/index.en.html)
+- [FRED 日経平均シリーズの著作権注記](https://fred.stlouisfed.org/series/NIKKEI225)
+- [Coinbase Market Data Terms](https://www.coinbase.com/legal/market_data)

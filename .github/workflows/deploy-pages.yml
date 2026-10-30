@@ -1,0 +1,151 @@
+name: Deploy to GitHub Pages
+
+# Runs from main and publishes both / and /develop/ in one Pages environment.
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [Validate develop]
+    types: [completed]
+    branches: [develop]
+  schedule:
+    # Hourly at :17 JST; GitHub may delay or skip scheduled runs.
+    - cron: '17 * * * *'
+      timezone: 'Asia/Tokyo'
+  workflow_dispatch:
+    inputs:
+      collect:
+        description: 'Collect prices before publishing'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed to persist price history to main.
+    outputs:
+      deploy: ${{ steps.publish-gate.outputs.deploy }}
+    steps:
+      - name: Checkout production
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+          persist-credentials: true
+      - name: Checkout validated develop
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'develop' }}
+          path: preview
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            production/pnpm-lock.yaml
+            preview/pnpm-lock.yaml
+
+      - name: Collect current prices
+        if: >-
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && inputs.collect)
+        working-directory: production
+        env:
+          AUTHORIZED_PRICE_FEED_URL: ${{ secrets.AUTHORIZED_PRICE_FEED_URL }}
+          AUTHORIZED_PRICE_FEED_TOKEN: ${{ secrets.AUTHORIZED_PRICE_FEED_TOKEN }}
+        run: node scripts/collect.mjs
+
+      - name: Check price history
+        id: price-diff
+        working-directory: production
+        run: |
+          if git diff --quiet -- public/data/prices.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Commit price history on main
+        if: steps.price-diff.outputs.changed == 'true'
+        working-directory: production
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/prices.json
+          git commit -m "data: refresh market history"
+          git push origin HEAD:main
+
+      - name: Determine whether to publish
+        id: publish-gate
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] &&
+             [ "${{ steps.price-diff.outputs.changed }}" != "true" ]; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "No price changes; skip scheduled deployment"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Copy production prices into preview
+        if: steps.publish-gate.outputs.deploy == 'true'
+        run: cp production/public/data/prices.json preview/public/data/prices.json
+
+      - name: Test and build production
+        if: steps.publish-gate.outputs.deploy == 'true'
+        working-directory: production
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+      - name: Test and build preview
+        if: steps.publish-gate.outputs.deploy == 'true'
+        working-directory: preview
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm exec tsc --noEmit
+          pnpm exec vite build --base=/market-tracker/develop/
+      - name: Combine sites
+        if: steps.publish-gate.outputs.deploy == 'true'
+        run: |
+          mkdir -p publish/develop
+          cp -a production/dist/. publish/
+          cp -a preview/dist/. publish/develop/
+          touch publish/.nojekyll
+      - uses: actions/configure-pages@v5
+        if: steps.publish-gate.outputs.deploy == 'true'
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.publish-gate.outputs.deploy == 'true'
+        with:
+          path: publish
+  deploy:
+    needs: build
+    if: needs.build.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

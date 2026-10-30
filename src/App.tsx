@@ -1,86 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer,
   Tooltip, XAxis, YAxis
 } from 'recharts';
 import { assets, categories } from './assets';
-import type { Asset, Category, PriceBook, PricePoint } from './types';
+import PriceCard from './components/PriceCard';
+import { approximateUsd, formatDate, formatUsd, formatValue, getChange, inRange, periods } from './pricing';
+import type { Period } from './pricing';
+import type { Category, PriceBook } from './types';
 
 type CategoryFilter = Category | 'all';
-type Period = '24H' | '7D' | '30D' | '90D' | 'ALL';
-const periods: Period[] = ['24H', '7D', '30D', '90D', 'ALL'];
 const emptyBook: PriceBook = { version: 1, updatedAt: null, series: {} };
-const durationMs: Record<Exclude<Period, 'ALL'>, number> = {
-  '24H': 86400_000, '7D': 7 * 86400_000,
-  '30D': 30 * 86400_000, '90D': 90 * 86400_000
-};
-
-function formatValue(value: number, asset: Asset) {
-  return new Intl.NumberFormat('ja-JP', {
-    maximumFractionDigits: asset.category === 'forex' ? 3 : 2,
-    minimumFractionDigits: asset.category === 'forex' ? 2 : 0
-  }).format(value);
-}
-
-function formatDate(value: string | null | undefined, withTime = false) {
-  if (!value) return '未取得';
-  const time = new Date(value);
-  if (!Number.isFinite(time.getTime())) return '未取得';
-  return new Intl.DateTimeFormat('ja-JP', {
-    timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric',
-    ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {})
-  }).format(time);
-}
-
-function inRange(points: PricePoint[], period: Period): PricePoint[] {
-  if (period === 'ALL') return points;
-  const threshold = Date.now() - durationMs[period];
-  return points.filter((point) => Date.parse(point.at) >= threshold);
-}
-
-function getChange(points: PricePoint[]) {
-  if (points.length < 2 || points[0].value <= 0) return null;
-  return ((points[points.length - 1].value / points[0].value) - 1) * 100;
-}
-
-function approximateUsd(point: PricePoint | undefined, fxPoints: PricePoint[]) {
-  if (!point) return null;
-  const priceTime = Date.parse(point.at);
-  // ECB is a daily reference rate; never use a future or excessively old FX rate.
-  const fx = [...fxPoints].reverse().find((rate) => {
-    const lag = priceTime - Date.parse(rate.at);
-    return lag >= 0 && lag <= 5 * 86400_000 && Number.isFinite(rate.value) && rate.value > 0;
-  });
-  return fx ? { value: point.value / fx.value, fxDate: fx.at } : null;
-}
-
-function formatUsd(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency', currency: 'USD', maximumFractionDigits: 0
-  }).format(value);
-}
-
-function PriceCard({
-  asset, points, fxPoints, selected, onSelect
-}: { asset: Asset; points: PricePoint[]; fxPoints: PricePoint[]; selected: boolean; onSelect: () => void }) {
-  const latest = points.at(-1);
-  const usd = asset.category === 'crypto' ? approximateUsd(latest, fxPoints) : null;
-  const change = getChange(points.slice(-2));
-  return (
-    <button type="button" className={'asset-card ' + (selected ? 'selected' : '')} onClick={onSelect}>
-      <span className="asset-top"><span className="ticker">{asset.ticker}</span><span className={'status-dot ' + (latest ? 'available' : '')}/></span>
-      <span className="asset-name">{asset.name}</span>
-      <span className="asset-price">{latest ? formatValue(latest.value, asset) : '—'} <small>{latest ? asset.currency : ''}</small></span>
-      {usd && <span className="usd-estimate">≈ {formatUsd(usd.value)} <span>参考換算</span></span>}
-      <span className="asset-bottom">
-        <span className={change === null ? 'muted' : change >= 0 ? 'positive' : 'negative'}>
-          {change === null ? (latest ? '比較データなし' : (asset.category === 'crypto' ? '価格未取得' : 'データ未接続')) : (change >= 0 ? '+' : '') + change.toFixed(2) + '%'}
-        </span>
-        <span className="muted">{latest ? formatDate(latest.at, true) : '—'}</span>
-      </span>
-    </button>
-  );
-}
 
 export default function App() {
   const [book, setBook] = useState<PriceBook>(emptyBook);
@@ -110,9 +40,7 @@ export default function App() {
     return () => controller.abort();
   }, []);
 
-  const filteredAssets = useMemo(
-    () => assets.filter((asset) => filter === 'all' || asset.category === filter), [filter]
-  );
+  const filteredAssets = assets.filter((asset) => filter === 'all' || asset.category === filter);
   const selected = assets.find((asset) => asset.id === selectedId) ?? assets[0];
   const allPoints = book.series[selected.id] ?? [];
   const points = inRange(allPoints, period);

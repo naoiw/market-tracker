@@ -3,10 +3,10 @@
 ## 全体構成
 
 ```text
-ECB（日次参考レート）           利用許諾済みの外部データAPI（任意）
+ECB（日次参考レート）       bitbank（BTC/ETH）       利用許諾済みAPI（任意）
        |                                    |
-   Frankfurter                              |
-       +-----------------+------------------+
+   Frankfurter               |              |
+       +---------------------+--------------+
                          |
               scripts/collect.mjs
                          |
@@ -28,6 +28,7 @@ ECB（日次参考レート）           利用許諾済みの外部データAPI
 - UIはReact + TypeScript + Rechartsを使う読み取り専用Viteアプリです。
 - ブラウザはビルド済み静的JSONのみ読み込みます。任意の認証トークンはActions Secretsからサーバー側の取得処理に渡します。
 - 自動取得する価格JSONの正本は`main`にのみ保存します。プレビューは公開直前に`main`の価格データを使用します。
+- bitbankのJPY建てティッカーからBTCとETHの最終約定価格を取得します。ドル額はフロントエンドでECBのUSD/JPY参考レートから概算し、ドル建ての観測データとしては保存しません。
 - CIは`validate-develop.yml`、価格取得と本番・プレビューの公開は`deploy-pages.yml`を使用します。
 
 ## データの保存形式

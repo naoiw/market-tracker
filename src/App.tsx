@@ -112,7 +112,6 @@ export default function App() {
     <div className="site-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-symbol">▥</span><span>MARKET<span className="brand-light">TRACKER</span></span></div>
-        <a href="https://github.com/naoiw/market-tracker" target="_blank" rel="noreferrer" className="repo-link">GitHub ↗</a>
       </header>
 
       <main>
@@ -203,7 +202,7 @@ export default function App() {
         </section>
         <p className="disclaimer">※ 本サイトは情報提供を目的とした試作ツールです。実際の約定価格ではなく、投資判断への利用を保証しません。価格取得には遅延・欠損が生じる場合があります。</p>
       </main>
-      <footer><span>MARKET TRACKER</span><span>Built with React · TypeScript · GitHub Actions</span></footer>
+      <footer><span>MARKET TRACKER</span><a href="https://github.com/naoiw/market-tracker" target="_blank" rel="noreferrer" className="repo-link">GitHub ↗</a></footer>
     </div>
   );
 }

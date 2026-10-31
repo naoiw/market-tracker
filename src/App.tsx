@@ -145,7 +145,7 @@ export default function App() {
         <section className="info-grid">
           <article className="info-panel"><span className="field-label">AUTOMATION</span>
             <h3>GitHub Actions で収集</h3>
-            <p>毎時17分（日本時間）に取得を試みます。BTC・ETHは毎時の観測値、為替はECBの日次参考値を保存します。</p>
+            <p>毎時42分（日本時間）に取得を試みます。BTC・ETHは毎時の観測値、為替はECBの日次参考値を保存します。</p>
           </article>
           <article className="info-panel"><span className="field-label">DATA SOURCES</span>
             <h3>価格と取得頻度について</h3>

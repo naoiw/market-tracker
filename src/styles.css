@@ -1,5 +1,13 @@
 :root {
-  font-family:Inter,"Noto Sans JP","Hiragino Kaku Gothic ProN",Meiryo,system-ui,sans-serif;
+  /* Keep these site-chrome tokens aligned across the five naoiw sites. */
+  --chrome-font: Inter, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+  --chrome-width: 1180px;
+  --chrome-gutter: 28px;
+  --chrome-header-height: 78px;
+  --chrome-brand-size: 16px;
+  --chrome-caption-size: 11px;
+  --chrome-footer-size: 12px;
+  font-family:var(--chrome-font);
   background:#0a1120;
   color:#ebf3ff;
   font-synthesis:none;
@@ -27,17 +35,17 @@ button:focus-visible,a:focus-visible {
   background:radial-gradient(ellipse 70% 30% at 75% -4%,#17395088,transparent 75%),#0a1120
 }
 .topbar,main,footer {
-  max-width:1250px;
+  max-width:var(--chrome-width);
   margin:auto;
-  padding-left:26px;
-  padding-right:26px
+  padding-left:var(--chrome-gutter);
+  padding-right:var(--chrome-gutter)
 }
 main {
   padding-top:32px;
   padding-bottom:55px
 }
 .topbar {
-  height:76px;
+  min-height:var(--chrome-header-height);
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -47,13 +55,13 @@ main {
   display:flex;
   gap:11px;
   align-items:center;
-  font-size:17px;
-  font-weight:850;
-  letter-spacing:1.5px
+  font-size:var(--chrome-brand-size);
+  font-weight:800;
+  letter-spacing:.02em
 }
 .brand-symbol {
-  width:34px;
-  height:34px;
+  width:36px;
+  height:36px;
   border-radius:10px;
   display:grid;
   place-items:center;
@@ -336,9 +344,10 @@ footer {
   padding-top:25px;
   padding-bottom:30px;
   border-top:1px solid #26354a;
-  font-size:11px;
+  font-size:var(--chrome-footer-size);
+  font-weight:500;
   color:#7c91a7;
-  letter-spacing:.8px
+  letter-spacing:.02em
 }
 @media(max-width:900px) {
   .asset-grid {
@@ -356,19 +365,19 @@ footer {
     margin-top:8px
   }
   .topbar,main,footer {
-    padding-left:16px;
-    padding-right:16px
+    padding-left:var(--chrome-gutter);
+    padding-right:var(--chrome-gutter)
   }
   .topbar {
-    height:66px
+    min-height:var(--chrome-header-height)
   }
   .brand {
-    font-size:13px;
-    letter-spacing:.7px
+    font-size:var(--chrome-brand-size);
+    letter-spacing:.02em
   }
   .brand-symbol {
-    height:30px;
-    width:30px
+    height:36px;
+    width:36px
   }
   .section-heading {
     display:block
@@ -435,4 +444,9 @@ footer {
 }
 .usd-estimate-detail span {
   font-size:12px
+}
+
+/* Shared mobile site-chrome sizing. */
+@media (max-width: 620px) {
+  :root { --chrome-gutter: 17px; --chrome-header-height: 67px; }
 }

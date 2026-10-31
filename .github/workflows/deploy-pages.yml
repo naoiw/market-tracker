@@ -9,10 +9,10 @@ on:
     types: [completed]
     branches: [develop]
   schedule:
-    # At minute :17 in every hour, in both UTC and JST.
+    # At minute :42 in every hour, in both UTC and JST.
     # No timezone override is needed for a schedule covering all 24 hours.
     # GitHub may delay or drop scheduled runs.
-    - cron: '17 * * * *'
+    - cron: '42 * * * *'
   workflow_dispatch:
     inputs:
       collect:

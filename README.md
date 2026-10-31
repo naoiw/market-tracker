@@ -26,7 +26,7 @@ GitHub Actions で価格データを定期取得し、React と TypeScript で�
 
 ## データ取得
 
-現在、USD/JPY・EUR/JPYのECB日次参考レートと、BTC/JPY・ETH/JPYのbitbank最新約定価格を、GitHub Actionsで**毎時17分（日本時間）に取得確認**します。暗号資産は取得時の時刻をUTCの時間単位に丸めて保存します。日経平均・TOPIX・S&P 500・NASDAQ Compositeはフィード未接続です。
+現在、USD/JPY・EUR/JPYのECB日次参考レートと、BTC/JPY・ETH/JPYのbitbank最新約定価格を、GitHub Actionsで**毎時42分（日本時間）に取得確認**します。暗号資産は取得時の時刻をUTCの時間単位に丸めて保存します。日経平均・TOPIX・S&P 500・NASDAQ Compositeはフィード未接続です。
 
 銘柄ごとの取得試行間隔・公開データの更新頻度・接続状態は[データソースと利用条件](docs/data-sources.md#銘柄別の取得頻度)を参照してください。
 

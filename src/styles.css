@@ -1,5 +1,13 @@
 :root {
-  font-family:Inter,"Noto Sans JP","Hiragino Kaku Gothic ProN",Meiryo,system-ui,sans-serif;
+  /* Keep these site-chrome tokens aligned across the five naoiw sites. */
+  --chrome-font: Inter, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+  --chrome-width: 1180px;
+  --chrome-gutter: 28px;
+  --chrome-header-height: 78px;
+  --chrome-brand-size: 16px;
+  --chrome-caption-size: 11px;
+  --chrome-footer-size: 12px;
+  font-family:var(--chrome-font);
   background:#0a1120;
   color:#ebf3ff;
   font-synthesis:none;
@@ -24,36 +32,50 @@ button:focus-visible,a:focus-visible {
 }
 .site-shell {
   min-height:100vh;
+  display:flex;
+  flex-direction:column;
   background:radial-gradient(ellipse 70% 30% at 75% -4%,#17395088,transparent 75%),#0a1120
 }
 .topbar,main,footer {
-  max-width:1250px;
-  margin:auto;
-  padding-left:26px;
-  padding-right:26px
+  width:100%;
+  max-width:var(--chrome-width);
+  margin:0 auto;
+  padding-left:var(--chrome-gutter);
+  padding-right:var(--chrome-gutter)
 }
 main {
+  flex:1;
   padding-top:32px;
-  padding-bottom:55px
+  padding-bottom:40px
 }
 .topbar {
-  height:76px;
+  position:relative;
+  min-height:var(--chrome-header-height);
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  border-bottom:1px solid #213149
+  justify-content:space-between
+}
+/* Both chrome rules share the same inset from the page-container edges. */
+.topbar::after {
+  content:"";
+  position:absolute;
+  bottom:0;
+  left:var(--chrome-gutter);
+  right:var(--chrome-gutter);
+  border-top:1px solid #213149;
+  pointer-events:none
 }
 .brand {
   display:flex;
   gap:11px;
   align-items:center;
-  font-size:17px;
-  font-weight:850;
-  letter-spacing:1.5px
+  font-size:var(--chrome-brand-size);
+  font-weight:800;
+  letter-spacing:.02em
 }
 .brand-symbol {
-  width:34px;
-  height:34px;
+  width:36px;
+  height:36px;
   border-radius:10px;
   display:grid;
   place-items:center;
@@ -104,14 +126,42 @@ main {
   font-size:22px;
   margin:0
 }
-.market-status {
-  display:flex;
-  gap:6px 16px;
-  align-items:center;
-  flex-wrap:wrap;
-  color:#90a2b7;
-  font-size:12px
+
+/* Shared visual pattern for the latest available data, not the browser fetch time. */
+.data-timestamp {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  align-content: center;
+  min-width: 0;
+  text-align: right;
 }
+.data-timestamp__label {
+  color: #7e93af;
+  font-size: var(--chrome-caption-size);
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.4;
+}
+.data-timestamp__value {
+  color: #eaf0fb;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.data-timestamp__detail {
+  color: #8396ac;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.data-timestamp__detail a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+.data-timestamp__detail a:hover { color: #c3d4e9; }
 .filter-row {
   display:flex;
   gap:8px;
@@ -327,18 +377,28 @@ main {
   color:#7f91a6;
   font-size:12px;
   line-height:1.8;
-  margin-top:32px
+  margin:32px 0 0
 }
 footer {
   display:flex;
   justify-content:space-between;
   gap:15px;
-  padding-top:25px;
-  padding-bottom:30px;
-  border-top:1px solid #26354a;
-  font-size:11px;
+  padding-top:28px;
+  padding-bottom:32px;
+  position:relative;
+  font-size:var(--chrome-footer-size);
+  font-weight:500;
   color:#7c91a7;
-  letter-spacing:.8px
+  letter-spacing:.02em
+}
+/* Draw the divider within the content width, not across the page gutters. */
+footer::before {
+  content:"";
+  position:absolute;
+  top:0;
+  left:var(--chrome-gutter);
+  right:var(--chrome-gutter);
+  border-top:1px solid #26354a
 }
 @media(max-width:900px) {
   .asset-grid {
@@ -352,23 +412,20 @@ footer {
   }
 }
 @media(max-width:600px) {
-  .market-status {
-    margin-top:8px
-  }
   .topbar,main,footer {
-    padding-left:16px;
-    padding-right:16px
+    padding-left:var(--chrome-gutter);
+    padding-right:var(--chrome-gutter)
   }
   .topbar {
-    height:66px
+    min-height:var(--chrome-header-height)
   }
   .brand {
-    font-size:13px;
-    letter-spacing:.7px
+    font-size:var(--chrome-brand-size);
+    letter-spacing:.02em
   }
   .brand-symbol {
-    height:30px;
-    width:30px
+    height:36px;
+    width:36px
   }
   .section-heading {
     display:block
@@ -435,4 +492,29 @@ footer {
 }
 .usd-estimate-detail span {
   font-size:12px
+}
+
+/* Shared mobile site-chrome sizing. */
+@media (max-width: 620px) {
+  :root { --chrome-gutter: 17px; --chrome-header-height: 67px; }
+}
+
+
+/* Responsive latest-data panel shared with the other data dashboards. */
+@media (max-width: 700px) {
+  .section-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .data-timestamp {
+    width: 100%;
+    justify-items: start;
+    text-align: left;
+    padding: 12px 15px;
+    border: 1px solid #27354a;
+    border-radius: 12px;
+  }
 }

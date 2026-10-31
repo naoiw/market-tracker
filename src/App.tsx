@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { assets, categories } from './assets';
 import PriceCard from './components/PriceCard';
-import { approximateUsd, formatDate, formatUsd, formatValue, getChange, inRange, periods } from './pricing';
+import { approximateUsd, formatDate, formatLatestTimestamp, formatUsd, formatValue, getChange, inRange, periods } from './pricing';
 import type { Period } from './pricing';
 import type { Category, PriceBook } from './types';
 
@@ -67,9 +67,12 @@ export default function App() {
         <section aria-label="資産一覧">
           <div className="section-heading">
             <h1>マーケット一覧</h1>
-            <div className="market-status">
-              <span>最終更新：{loading ? '読み込み中…' : formatDate(book.updatedAt, true)}</span>
-              <span>取得済み {loadedCount}/{assets.length} 銘柄</span>
+            <div className="data-timestamp" aria-label="価格データの最終更新">
+              <span className="data-timestamp__label">LATEST DATA</span>
+              <strong className="data-timestamp__value">
+                {loading ? '読み込み中…' : formatLatestTimestamp(book.updatedAt)}
+              </strong>
+              <span className="data-timestamp__detail">価格データ更新 · 取得済み {loadedCount}/{assets.length} 銘柄</span>
             </div>
           </div>
           <div className="filter-row" role="group" aria-label="資産カテゴリー">

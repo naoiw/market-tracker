@@ -32,24 +32,38 @@ button:focus-visible,a:focus-visible {
 }
 .site-shell {
   min-height:100vh;
+  display:flex;
+  flex-direction:column;
   background:radial-gradient(ellipse 70% 30% at 75% -4%,#17395088,transparent 75%),#0a1120
 }
 .topbar,main,footer {
+  width:100%;
   max-width:var(--chrome-width);
-  margin:auto;
+  margin:0 auto;
   padding-left:var(--chrome-gutter);
   padding-right:var(--chrome-gutter)
 }
 main {
+  flex:1;
   padding-top:32px;
-  padding-bottom:48px
+  padding-bottom:40px
 }
 .topbar {
+  position:relative;
   min-height:var(--chrome-header-height);
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  border-bottom:1px solid #213149
+  justify-content:space-between
+}
+/* Both chrome rules share the same inset from the page-container edges. */
+.topbar::after {
+  content:"";
+  position:absolute;
+  bottom:0;
+  left:var(--chrome-gutter);
+  right:var(--chrome-gutter);
+  border-top:1px solid #213149;
+  pointer-events:none
 }
 .brand {
   display:flex;

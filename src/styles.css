@@ -42,7 +42,7 @@ button:focus-visible,a:focus-visible {
 }
 main {
   padding-top:32px;
-  padding-bottom:55px
+  padding-bottom:48px
 }
 .topbar {
   min-height:var(--chrome-header-height);
@@ -335,19 +335,28 @@ main {
   color:#7f91a6;
   font-size:12px;
   line-height:1.8;
-  margin-top:32px
+  margin:32px 0 0
 }
 footer {
   display:flex;
   justify-content:space-between;
   gap:15px;
-  padding-top:25px;
-  padding-bottom:30px;
-  border-top:1px solid #26354a;
+  padding-top:28px;
+  padding-bottom:32px;
+  position:relative;
   font-size:var(--chrome-footer-size);
   font-weight:500;
   color:#7c91a7;
   letter-spacing:.02em
+}
+/* Draw the divider within the content width, not across the page gutters. */
+footer::before {
+  content:"";
+  position:absolute;
+  top:0;
+  left:var(--chrome-gutter);
+  right:var(--chrome-gutter);
+  border-top:1px solid #26354a
 }
 @media(max-width:900px) {
   .asset-grid {

@@ -126,14 +126,42 @@ main {
   font-size:22px;
   margin:0
 }
-.market-status {
-  display:flex;
-  gap:6px 16px;
-  align-items:center;
-  flex-wrap:wrap;
-  color:#90a2b7;
-  font-size:12px
+
+/* Shared visual pattern for the latest available data, not the browser fetch time. */
+.data-timestamp {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  align-content: center;
+  min-width: 0;
+  text-align: right;
 }
+.data-timestamp__label {
+  color: #7e93af;
+  font-size: var(--chrome-caption-size);
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.4;
+}
+.data-timestamp__value {
+  color: #eaf0fb;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.data-timestamp__detail {
+  color: #8396ac;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.data-timestamp__detail a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+.data-timestamp__detail a:hover { color: #c3d4e9; }
 .filter-row {
   display:flex;
   gap:8px;
@@ -384,9 +412,6 @@ footer::before {
   }
 }
 @media(max-width:600px) {
-  .market-status {
-    margin-top:8px
-  }
   .topbar,main,footer {
     padding-left:var(--chrome-gutter);
     padding-right:var(--chrome-gutter)
@@ -472,4 +497,24 @@ footer::before {
 /* Shared mobile site-chrome sizing. */
 @media (max-width: 620px) {
   :root { --chrome-gutter: 17px; --chrome-header-height: 67px; }
+}
+
+
+/* Responsive latest-data panel shared with the other data dashboards. */
+@media (max-width: 700px) {
+  .section-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .data-timestamp {
+    width: 100%;
+    justify-items: start;
+    text-align: left;
+    padding: 12px 15px;
+    border: 1px solid #27354a;
+    border-radius: 12px;
+  }
 }

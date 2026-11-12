@@ -2,10 +2,10 @@
 
 ## 起動
 
-Node.js 22 / pnpm 9.15.0 を使用します（`.nvmrc`と`package.json`で指定）。
+Node.js 26 / pnpm 9.15.0 を使用します（`.nvmrc`と`package.json`で指定）。
 
 ```bash
-corepack enable
+npm install --global pnpm@9.15.0
 pnpm install --frozen-lockfile
 pnpm dev
 pnpm test

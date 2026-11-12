@@ -36,13 +36,13 @@ GitHub Actions で価格データを定期取得し、React と TypeScript で�
 
 - **TypeScript / React 19 / Recharts** — UI・価格グラフ
 - **CSS / Vite** — スタイル・開発サーバー・ビルド
-- **Node.js 22 / pnpm 9** — 価格取得・開発・ビルド
+- **Node.js 26 / pnpm 9** — 価格取得・開発・ビルド
 - **GitHub Actions / GitHub Pages** — テスト・定期取得・デプロイ
 
 ## ローカル開発
 
 ```bash
-corepack enable
+npm install --global pnpm@9.15.0
 pnpm install --frozen-lockfile
 pnpm dev      # 開発サーバーを起動
 pnpm test     # 自動テスト
